@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>حاسبة المعالجة الصوتية للفراغات</title>
+<style>
+/* layout: room tabs on top, input form on the start side, sticky dashboard on the end side, project summary below */
+:root{
+  --paper:#eef1f2; --card:#fbfcfc; --ink:#16242b; --muted:#5b6b73; --line:#d3dadd; --accent:#0b6e8a; --accent-ink:#ffffff; --field:#ffffff;
+  --good:#1f7a4d; --warn:#b06a00; --bad:#b3372e; --soft:#e3eaec;
+  --f-display:"Readex Pro","IBM Plex Sans Arabic","Geeza Pro","Segoe UI",Tahoma,sans-serif;
+  --f-body:"IBM Plex Sans Arabic","Geeza Pro","Segoe UI",Tahoma,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){--paper:#141b1f;--card:#1b2429;--ink:#e6eef1;--muted:#9bacb4;--line:#2f3c43;--accent:#4fb6d3;--accent-ink:#06222b;--field:#11181b;--good:#5fc792;--warn:#e0a54a;--bad:#ef7d73;--soft:#243037;color-scheme:dark}
+}
+:root[data-theme="dark"]{--paper:#141b1f;--card:#1b2429;--ink:#e6eef1;--muted:#9bacb4;--line:#2f3c43;--accent:#4fb6d3;--accent-ink:#06222b;--field:#11181b;--good:#5fc792;--warn:#e0a54a;--bad:#ef7d73;--soft:#243037;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:14.5px;line-height:1.55}
+main{max-width:1180px;margin:0 auto;padding:20px 16px 48px;display:flex;flex-direction:column;gap:16px}
+h1{font-family:var(--f-display);font-size:23px;font-weight:600;margin:0;text-wrap:balance}
+h2{font-family:var(--f-display);font-size:15px;font-weight:600;margin:0}
+p{margin:0}.muted{color:var(--muted);font-size:12.5px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.tab{font:inherit;padding:6px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+.tab[aria-selected=true]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.tab.add{border-style:dashed;color:var(--accent)}
+.cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:16px;align-items:start}
+.form{display:flex;flex-direction:column;gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.dash{position:sticky;top:12px;display:flex;flex-direction:column;gap:12px}
+.g{display:grid;gap:10px}.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}
+.f{display:flex;flex-direction:column;gap:3px;min-width:0}
+.f>label,.lab{font-size:12.5px;color:var(--muted)}
+input[type=number],input[type=text],select{font:inherit;width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--field);color:var(--ink)}
+input[type=number]{direction:ltr;text-align:start;font-variant-numeric:tabular-nums}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.sw{display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:500}
+.sw input{appearance:none;width:38px;height:22px;border-radius:999px;background:var(--line);position:relative;cursor:pointer;flex:none;transition:background .15s}
+.sw input::after{content:"";position:absolute;top:3px;inset-inline-start:3px;width:16px;height:16px;border-radius:50%;background:var(--card);transition:inset-inline-start .15s}
+.sw input:checked{background:var(--accent)}.sw input:checked::after{inset-inline-start:19px}
+.orow{display:grid;grid-template-columns:minmax(0,1.6fr) 1fr 1fr 34px;gap:6px;align-items:end}
+button{font:inherit;padding:6px 12px;border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:6px;cursor:pointer}
+button:hover{border-color:var(--accent);color:var(--accent)}
+button.x{padding:6px 0;color:var(--bad)}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0}
+.kpi b{display:block;font-family:var(--f-display);font-size:22px;font-weight:600;direction:ltr;text-align:end;font-variant-numeric:tabular-nums;line-height:1.25}
+.kpi span{font-size:12px;color:var(--muted)}
+.kpi.main{grid-column:span 3;border-color:var(--accent);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.kpi.main b{font-size:34px;color:var(--accent)}
+.pill{display:inline-block;padding:3px 12px;border-radius:999px;font-size:12.5px;font-weight:600;border:1px solid currentColor}
+.ok{color:var(--good)}.near{color:var(--warn)}.no{color:var(--bad)}
+.bars{display:flex;flex-direction:column;gap:6px}
+.bar{display:grid;grid-template-columns:120px 1fr 54px;gap:8px;align-items:center;font-size:12.5px}
+.track{height:12px;background:var(--soft);border-radius:4px;overflow:hidden}
+.fill{height:100%;border-radius:4px;background:var(--accent)}
+.bar b{text-align:end;direction:ltr;font-variant-numeric:tabular-nums;font-weight:600}
+canvas{width:100%;height:190px;display:block}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{padding:5px 8px;text-align:start;border-bottom:1px solid var(--line);font-weight:400;white-space:nowrap}
+th{font-size:12px;color:var(--muted)}td.n,th.n{text-align:end;direction:ltr}
+tfoot td{font-weight:600;border-bottom:0}
+.btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+#msg{font-size:13px;color:var(--good)}
+[hidden]{display:none!important}
+@media (max-width:860px){.cols{grid-template-columns:1fr}.dash{position:static}.g3{grid-template-columns:1fr 1fr}}
+@media (max-width:460px){.g2,.g3,.kpis{grid-template-columns:1fr}.kpi.main{grid-column:auto}.orow{grid-template-columns:1fr 1fr}}
+@media (prefers-reduced-motion:reduce){.sw input,.sw input::after{transition:none}}
+</style>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b6e8a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="المعالجة الصوتية">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+</head>
+<body>
+<main>
+  <header>
+    <h1>حاسبة المعالجة الصوتية للفراغات</h1>
+    <p class="muted">أدخل أبعاد الفراغ وتشطيباته وقيمة NRC للمنتج، فتحسب المساحة اللازم تغطيتها للوصول إلى زمن الارتداد المناسب لنوع الفراغ. حساب تقديري بمعادلة سابين.</p>
+  </header>
+  <div class="tabs" id="tabs" role="tablist" aria-label="الفراغات"></div>
+
+  <div class="cols">
+    <div class="form">
+      <div class="card">
+        <h2>الفراغ</h2>
+        <div class="g g2">
+          <div class="f"><label for="name">اسم الفراغ</label><input type="text" id="name" maxlength="40"></div>
+          <div class="f"><label for="type">نوع الاستخدام</label><select id="type"></select></div>
+        </div>
+        <div class="g g3">
+          <div class="f"><label for="L">الطول م</label><input type="number" id="L" min="1" step="0.1"></div>
+          <div class="f"><label for="W">العرض م</label><input type="number" id="W" min="1" step="0.1"></div>
+          <div class="f"><label for="H">الارتفاع م</label><input type="number" id="H" min="2" step="0.05"></div>
+        </div>
+        <div class="f" id="tbox" hidden><label for="tcustom">زمن الارتداد المستهدف (ث)</label><input type="number" id="tcustom" min="0.2" max="4" step="0.05"></div>
+        <p class="muted" id="geo"></p>
+      </div>
+
+      <div class="card">
+        <h2>التشطيبات الحالية</h2>
+        <div class="g g2">
+          <div class="f"><label for="wall">الجدران</label><select id="wall"></select></div>
+          <div class="f"><label for="ceil">السقف</label><select id="ceil"></select></div>
+          <div class="f"><label for="glass">مساحة الزجاج في الجدران م²</label><input type="number" id="glass" min="0" step="0.5"></div>
+          <div class="f"><label for="floor">الأرضية الصلبة</label><select id="floor"></select></div>
+        </div>
+        <label class="sw"><input type="checkbox" id="carpet"><span>يوجد فرش على الأرضية (سجاد أو موكيت)</span></label>
+        <div class="g g2" id="carpetBox">
+          <div class="f"><label for="carpetType">نوع الفرش</label><select id="carpetType"></select></div>
+          <div class="f"><label for="carpetN">NRC الفرش</label><input type="number" id="carpetN" min="0" max="1" step="0.01"></div>
+          <div class="f"><label for="carpetPct">نسبة تغطية الأرضية %</label><input type="number" id="carpetPct" min="0" max="100" step="5"></div>
+        </div>
+        <div class="g g2">
+          <div class="f"><label for="seats">عدد المقاعد</label><input type="number" id="seats" min="0" step="1"></div>
+          <div class="f"><label for="seatType">نوع المقاعد</label><select id="seatType"></select></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <label class="sw"><input type="checkbox" id="other"><span>توجد مواد ماصة أخرى (ستائر، ألواح قائمة، أثاث منجد)</span></label>
+        <div id="otherBox" class="g">
+          <div id="orows" class="g"></div>
+          <div><button type="button" id="addOther">أضف مادة</button></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>المنتج الصوتي</h2>
+        <div class="g g2">
+          <div class="f"><label for="pname">اسم المنتج</label><input type="text" id="pname" maxlength="50"></div>
+          <div class="f"><label for="pnrc">قيمة NRC للمنتج</label><input type="number" id="pnrc" min="0.05" max="1.2" step="0.01"></div>
+          <div class="f"><label for="ploc">مكان التركيب</label><select id="ploc"><option value="ceil">السقف</option><option value="wall">الجدران</option><option value="both">السقف والجدران</option></select></div>
+          <div class="f"><label for="waste">الهالك %</label><input type="number" id="waste" min="0" max="40" step="1"></div>
+          <div class="f"><label for="pl">طول اللوح مم</label><input type="number" id="pl" min="100" step="10"></div>
+          <div class="f"><label for="pw">عرض اللوح مم</label><input type="number" id="pw" min="100" step="10"></div>
+          <div class="f"><label for="price">سعر المتر المربع (اختياري)</label><input type="number" id="price" min="0" step="1"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dash" aria-live="polite">
+      <div class="kpis">
+        <div class="kpi main"><div><span>المساحة اللازم تغطيتها بالمنتج</span><b id="k-need"></b></div><span class="pill" id="pill"></span></div>
+        <div class="kpi"><span>زمن الارتداد الحالي</span><b id="k-t0"></b></div>
+        <div class="kpi"><span>الهدف</span><b id="k-tt"></b></div>
+        <div class="kpi"><span>بعد المعالجة</span><b id="k-t1"></b></div>
+        <div class="kpi"><span>نسبة التغطية من سطح التركيب</span><b id="k-pc"></b></div>
+        <div class="kpi"><span>عدد الألواح مع الهالك</span><b id="k-pan"></b></div>
+        <div class="kpi"><span>التكلفة التقديرية</span><b id="k-cost"></b></div>
+      </div>
+      <div class="card">
+        <div class="f"><label for="cover">المساحة المغطاة فعلياً م²: <b id="coverV" style="color:var(--ink)"></b></label><input type="range" id="cover" min="0" step="1"></div>
+        <div class="btns"><button type="button" id="autoCover">اضبطها على المساحة اللازمة</button><span class="muted" id="capNote"></span></div>
+        <canvas id="chart" aria-label="منحنى زمن الارتداد مقابل مساحة التغطية"></canvas>
+        <p class="muted">المنحنى: زمن الارتداد كلما زادت مساحة المنتج. الخط الأفقي هو الهدف والنقطة هي المساحة المختارة.</p>
+      </div>
+      <div class="card">
+        <h2>من أين يأتي الامتصاص الحالي (م² سابين)</h2>
+        <div class="bars" id="bars"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>ملخص كل الفراغات</h2>
+    <div class="tw"><table id="sum"><thead><tr><th>الفراغ</th><th>الاستخدام</th><th class="n">الحجم م³</th><th class="n">قبل (ث)</th><th class="n">الهدف (ث)</th><th class="n">بعد (ث)</th><th>المنتج</th><th class="n">المساحة م²</th><th class="n">ألواح</th><th class="n">التكلفة</th></tr></thead><tbody></tbody><tfoot></tfoot></table></div>
+    <div class="btns"><button type="button" id="dup">انسخ هذا الفراغ</button><button type="button" id="del">احذف هذا الفراغ</button><button type="button" id="copy">انسخ الملخص كجدول</button><button type="button" id="reset">ابدأ من جديد</button><button type="button" id="exp">صدّر نسخة احتياطية</button><button type="button" id="impb">استورد نسخة</button><button type="button" id="prt">طباعة / PDF</button><input type="file" id="imp" accept="application/json,.json" hidden><span id="msg" role="status"></span></div>
+    <p class="muted">أهداف زمن الارتداد مبنية على فئات المعيار الألماني DIN 18041 للكلام والتعليم والموسيقى والفراغات العامة، وهي إرشادية. قيم المواد قيم نموذجية؛ استعمل قيمة ورقة البيانات عند توفرها. NRC متوسط للترددات المتوسطة ولا يغطي الترددات المنخفضة. البيانات تُحفظ في هذا المتصفح فقط.</p>
+  </div>
+</main>
+<script>
+(function(){
+const lg=Math.log10;
+const TYPES={
+ speech:{n:'قاعة محاضرات أو مسرح للكلام',t:(V,H)=>0.37*lg(V)-0.14},
+ meet:{n:'اجتماعات أو فصل دراسي',t:(V,H)=>0.32*lg(V)-0.17},
+ music:{n:'قاعة موسيقى',t:(V,H)=>0.45*lg(V)+0.07},
+ office:{n:'مكتب أو استقبال',t:(V,H)=>0.161*(H<=2.5?4:2.13+4.69*lg(H))},
+ lounge:{n:'ضيافة أو مطعم أو صالة انتظار',t:(V,H)=>0.161*(H<=2.5?5:3.13+4.69*lg(H))},
+ corridor:{n:'ممر أو بهو',t:(V,H)=>0.161*(H<=2.5?6.67:4.80+4.69*lg(H))},
+ custom:{n:'هدف مخصص',t:null}};
+const WALL={paint:['لياسة أو دهان على طابوق',0.03],gyp:['ألواح جبس',0.06],conc:['خرسانة ظاهرة',0.02],wood:['تجليد خشبي',0.10],tile:['سيراميك أو رخام',0.01]};
+const CEIL={paint:['خرسانة أو لياسة مدهونة',0.03],gyp:['سقف جبس مصمت',0.07],tile:['بلاطات سقف معدنية عادية',0.55],metal:['صاج معدني',0.05]};
+const FLOOR={hard:['بلاط أو رخام أو خرسانة',0.02],wood:['باركيه أو خشب',0.07],vinyl:['فينيل',0.03]};
+const CARPET={tile:['سجاد مربعات',0.20],thin:['موكيت رقيق ملصوق',0.15],thick:['سجاد سميك مع لباد',0.35],custom:['قيمة أدخلها',null]};
+const SEAT={none:['بدون تنجيد',0.02],light:['تنجيد خفيف',0.25],mid:['تنجيد متوسط',0.45],heavy:['تنجيد سميك',0.60]};
+const NEW=()=>({name:'فراغ جديد',type:'meet',L:8,W:6,H:3,tcustom:0.6,wall:'paint',ceil:'paint',floor:'hard',glass:0,carpet:false,carpetType:'tile',carpetN:0.20,carpetPct:100,seats:0,seatType:'light',other:false,others:[],
+  pname:'لوح صوتي',pnrc:0.85,ploc:'ceil',waste:10,pl:1200,pw:600,price:0,cover:null});
+const KEY='acoustic-general-calc-v1';let S={rooms:[NEW()],cur:0};
+try{const t=localStorage.getItem(KEY);if(t){const o=JSON.parse(t);if(o&&Array.isArray(o.rooms)&&o.rooms.length)S=o;}}catch(e){}
+S.cur=Math.min(S.cur||0,S.rooms.length-1);
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}};
+const $=id=>document.getElementById(id),R=()=>S.rooms[S.cur],f1=v=>v.toFixed(1),f2=v=>v.toFixed(2);
+function fill(sel,o){$(sel).innerHTML=Object.keys(o).map(k=>'<option value="'+k+'">'+(o[k].n||o[k][0])+(o[k][1]!=null&&!o[k].n?' ('+o[k][1].toFixed(2)+')':'')+'</option>').join('');}
+fill('type',TYPES);fill('wall',WALL);fill('ceil',CEIL);fill('floor',FLOOR);fill('carpetType',CARPET);fill('seatType',SEAT);
+function calc(r){
+  const Sf=r.L*r.W,V=Sf*r.H,wallG=2*(r.L+r.W)*r.H,glass=Math.min(Math.max(0,r.glass),wallG),Sw=wallG-glass;
+  const aw=WALL[r.wall][1],ac=CEIL[r.ceil][1],af=FLOOR[r.floor][1],cp=r.carpet?Math.min(100,Math.max(0,r.carpetPct))/100:0;
+  const parts=[['السقف',Sf*ac],['الجدران',Sw*aw],['الزجاج',glass*0.05],['الأرضية الصلبة',Sf*(1-cp)*af],['الفرش',Sf*cp*r.carpetN],['المقاعد',Math.max(0,r.seats)*SEAT[r.seatType][1]],
+    ['مواد ماصة أخرى',r.other?r.others.reduce((s,o)=>s+Math.max(0,o.area||0)*Math.max(0,o.nrc||0),0):0]];
+  const A0=Math.max(0.01,parts.reduce((s,p)=>s+p[1],0));
+  const tt=r.type==='custom'?r.tcustom:Math.max(0.3,TYPES[r.type].t(V,r.H));
+  const cap=r.ploc==='ceil'?Sf:r.ploc==='wall'?Sw:Sf+Sw, base=r.ploc==='ceil'?ac:r.ploc==='wall'?aw:(Sf*ac+Sw*aw)/(Sf+Sw);
+  const gain=Math.max(0.005,r.pnrc-base), Areq=0.161*V/tt, need=Math.max(0,(Areq-A0)/gain);
+  const cover=r.cover==null?Math.min(need,cap):Math.min(r.cover,cap);
+  const T0=0.161*V/A0,T1=0.161*V/(A0+cover*gain),pa=r.pl*r.pw/1e6,withW=cover*(1+r.waste/100);
+  return {Sf,V,Sw,A0,parts,tt,cap,gain,need,cover,T0,T1,panels:pa>0?Math.ceil(withW/pa):0,cost:withW*(r.price||0),withW,enough:need<=cap+1e-6,Tmin:0.161*V/(A0+cap*gain)};
+}
+const IDS=['name','type','L','W','H','tcustom','wall','ceil','floor','glass','carpetType','carpetN','carpetPct','seats','seatType','pname','pnrc','ploc','waste','pl','pw','price'];
+function toForm(){const r=R();IDS.forEach(k=>{$(k).value=r[k];});$('carpet').checked=r.carpet;$('other').checked=r.other;orows();vis();}
+function vis(){const r=R();$('carpetBox').hidden=!r.carpet;$('otherBox').hidden=!r.other;$('tbox').hidden=r.type!=='custom';}
+function orows(){const r=R(),b=$('orows');b.innerHTML='';r.others.forEach((o,i)=>{const d=document.createElement('div');d.className='orow';
+  d.innerHTML='<div class="f"><label for="on'+i+'">المادة</label><input type="text" id="on'+i+'" maxlength="30"></div><div class="f"><label for="oa'+i+'">المساحة م²</label><input type="number" id="oa'+i+'" min="0" step="0.5"></div><div class="f"><label for="oc'+i+'">NRC</label><input type="number" id="oc'+i+'" min="0" max="1.2" step="0.01"></div><button type="button" class="x" aria-label="احذف المادة" id="ox'+i+'">×</button>';
+  b.appendChild(d);$('on'+i).value=o.name;$('oa'+i).value=o.area;$('oc'+i).value=o.nrc;
+  $('on'+i).oninput=e=>{o.name=e.target.value;save();};$('oa'+i).oninput=e=>{o.area=parseFloat(e.target.value)||0;update();};$('oc'+i).oninput=e=>{o.nrc=parseFloat(e.target.value)||0;update();};
+  $('ox'+i).onclick=()=>{r.others.splice(i,1);orows();update();};});}
+IDS.forEach(k=>{const el=$(k),isNum=el.type==='number';el.addEventListener('input',()=>{const r=R();
+  if(isNum){const v=parseFloat(el.value);if(isNaN(v)||v<0)return;r[k]=v;}else r[k]=el.value;
+  if(k==='carpetType'&&CARPET[r.carpetType][1]!=null){r.carpetN=CARPET[r.carpetType][1];$('carpetN').value=r.carpetN;}
+  if(k==='carpetN')r.carpetType='custom',$('carpetType').value='custom';
+  if(['L','W','H','type','tcustom','wall','ceil','floor','glass','carpetType','carpetN','carpetPct','seats','seatType','pnrc','ploc'].includes(k))r.cover=null;
+  vis();update();if(k==='name')tabs();});});
+$('carpet').onchange=e=>{R().carpet=e.target.checked;R().cover=null;vis();update();};
+$('other').onchange=e=>{const r=R();r.other=e.target.checked;if(r.other&&!r.others.length){r.others.push({name:'ستائر قماشية',area:10,nrc:0.45});orows();}r.cover=null;vis();update();};
+$('addOther').onclick=()=>{R().others.push({name:'مادة',area:5,nrc:0.5});orows();R().cover=null;update();};
+$('cover').oninput=e=>{R().cover=parseFloat(e.target.value);update();};
+$('autoCover').onclick=()=>{R().cover=null;update();};
+function tabs(){const b=$('tabs');b.innerHTML='';S.rooms.forEach((r,i)=>{const t=document.createElement('button');t.type='button';t.className='tab';t.setAttribute('role','tab');t.setAttribute('aria-selected',i===S.cur);t.textContent=r.name||('فراغ '+(i+1));t.onclick=()=>{S.cur=i;tabs();toForm();update();};b.appendChild(t);});
+  const a=document.createElement('button');a.type='button';a.className='tab add';a.textContent='+ فراغ جديد';a.onclick=()=>{const n=NEW(),r=R();['pname','pnrc','ploc','waste','pl','pw','price'].forEach(k=>n[k]=r[k]);n.name='فراغ '+(S.rooms.length+1);S.rooms.push(n);S.cur=S.rooms.length-1;tabs();toForm();update();};b.appendChild(a);}
+function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+function chart(c){const cv=$('chart'),d=Math.min(window.devicePixelRatio||1,2),w=cv.clientWidth,h=cv.clientHeight;if(!w)return;cv.width=w*d;cv.height=h*d;const x=cv.getContext('2d');x.scale(d,d);
+  const r=R(),V=c.V,pl=44,pr=10,pt=10,pb=24,maxX=Math.max(c.cap,1),maxY=Math.max(c.T0,c.tt)*1.12,X=a=>pl+(w-pl-pr)*a/maxX,Y=t=>pt+(h-pt-pb)*(1-t/maxY);
+  x.direction='ltr';x.font='11px '+css('--f-body');x.fillStyle=css('--muted');x.strokeStyle=css('--line');x.lineWidth=1;x.textAlign='right';
+  for(let i=0;i<=4;i++){const t=maxY*i/4;x.beginPath();x.moveTo(pl,Y(t));x.lineTo(w-pr,Y(t));x.stroke();x.fillText(t.toFixed(1)+' s',pl-6,Y(t)+4);}
+  for(let i=0;i<=4;i++){const a=maxX*i/4;x.textAlign=i===4?'right':i===0?'left':'center';x.fillText(Math.round(a)+' m²',X(a),h-6);}
+  x.setLineDash([5,4]);x.strokeStyle=css('--good');x.lineWidth=1.5;x.beginPath();x.moveTo(pl,Y(c.tt));x.lineTo(w-pr,Y(c.tt));x.stroke();x.setLineDash([]);
+  x.strokeStyle=css('--accent');x.lineWidth=2.2;x.beginPath();for(let i=0;i<=60;i++){const a=maxX*i/60,t=0.161*V/(c.A0+a*c.gain);i?x.lineTo(X(a),Y(t)):x.moveTo(X(a),Y(t));}x.stroke();
+  x.fillStyle=css('--accent');x.beginPath();x.arc(X(c.cover),Y(c.T1),5,0,6.3);x.fill();x.strokeStyle=css('--card');x.lineWidth=2;x.stroke();}
+function status(c){const q=c.T1/c.tt;if(!c.enough&&q>1.03)return['no','المنتج في هذا المكان لا يكفي وحده'];if(q>1.2)return['no','أعلى من الهدف بـ '+Math.round((q-1)*100)+'%'];if(q>1.03)return['near','قريب، أعلى من الهدف بـ '+Math.round((q-1)*100)+'%'];if(q<0.8)return['near','امتصاص زائد عن الحاجة'];return['ok','ضمن الهدف'];}
+function update(){const r=R(),c=calc(r);
+  $('geo').textContent='مساحة الأرضية '+f1(c.Sf)+' م² · مساحة الجدران الصافية '+f1(c.Sw)+' م² · الحجم '+Math.round(c.V)+' م³';
+  $('k-need').textContent=c.need<0.05?'0 m²':f1(c.need)+' m²';$('k-t0').textContent=f2(c.T0)+' s';$('k-tt').textContent=f2(c.tt)+' s';$('k-t1').textContent=f2(c.T1)+' s';
+  $('k-pc').textContent=Math.round(100*c.cover/c.cap)+'%';$('k-pan').textContent=c.panels;$('k-cost').textContent=r.price>0?Math.round(c.cost).toLocaleString('en'):'—';
+  const st=status(c),p=$('pill');p.className='pill '+st[0];p.textContent=c.need<0.05?'الفراغ ضمن الهدف بدون إضافة':st[1];
+  const sl=$('cover');sl.max=Math.floor(c.cap);if(document.activeElement!==sl)sl.value=c.cover;$('coverV').textContent=f1(c.cover);
+  $('capNote').textContent=c.enough?'الحد الأقصى المتاح '+Math.floor(c.cap)+' م²':'حتى مع تغطية كامل السطح ('+Math.floor(c.cap)+' م²) يبقى الزمن '+f2(c.Tmin)+' ث. اختر السقف والجدران معاً أو منتجاً بقيمة NRC أعلى.';
+  const mx=Math.max.apply(null,c.parts.map(x=>x[1]).concat([0.1]));
+  $('bars').innerHTML=c.parts.filter(x=>x[1]>0.005).map(x=>'<div class="bar"><span>'+x[0]+'</span><div class="track"><div class="fill" style="width:'+(100*x[1]/mx)+'%"></div></div><b>'+f1(x[1])+'</b></div>').join('')+'<div class="bar"><span><b style="text-align:start;display:inline">الإجمالي</b></span><span></span><b>'+f1(c.A0)+'</b></div>';
+  chart(c);summary();save();}
+function summary(){const tb=$('sum').tBodies[0];tb.innerHTML='';let ta=0,tp=0,tc=0;S.rooms.forEach((r,i)=>{const c=calc(r);ta+=c.cover;tp+=c.panels;tc+=c.cost;const tr=document.createElement('tr');
+  [r.name,TYPES[r.type].n,Math.round(c.V),f2(c.T0),f2(c.tt),f2(c.T1),r.pname+' ('+f2(r.pnrc)+')',f1(c.cover),c.panels,r.price>0?Math.round(c.cost).toLocaleString('en'):'—'].forEach((v,j)=>{const td=document.createElement('td');td.textContent=v;if([2,3,4,5,7,8,9].includes(j))td.className='n';tr.appendChild(td);});
+  if(i===S.cur)tr.style.fontWeight='600';tb.appendChild(tr);});
+  $('sum').tFoot.innerHTML='<tr><td colspan="7">الإجمالي</td><td class="n">'+f1(ta)+'</td><td class="n">'+tp+'</td><td class="n">'+(tc>0?Math.round(tc).toLocaleString('en'):'—')+'</td></tr>';}
+$('dup').onclick=()=>{const n=JSON.parse(JSON.stringify(R()));n.name+=' (نسخة)';S.rooms.push(n);S.cur=S.rooms.length-1;tabs();toForm();update();};
+$('del').onclick=()=>{if(S.rooms.length<2){$('msg').textContent='يجب أن يبقى فراغ واحد على الأقل';return;}S.rooms.splice(S.cur,1);S.cur=Math.max(0,S.cur-1);tabs();toForm();update();$('msg').textContent='حُذف الفراغ';};
+$('reset').onclick=()=>{S={rooms:[NEW()],cur:0};tabs();toForm();update();$('msg').textContent='بدأت من جديد';};
+$('copy').onclick=()=>{const t=[...$('sum').querySelectorAll('tr')].map(tr=>[...tr.children].map(td=>td.textContent.trim()).join('\t')).join('\n');
+  navigator.clipboard.writeText(t).then(()=>{$('msg').textContent='نُسخ الملخص، الصقه في Excel';},()=>{$('msg').textContent='تعذر النسخ، حدد الجدول وانسخه يدوياً';});};
+let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>chart(calc(R())),80);});
+new MutationObserver(()=>chart(calc(R()))).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+tabs();toForm();update();
+$('exp').onclick=()=>{const blob=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);a.download='acoustic-backup-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);$('msg').textContent='صُدّرت النسخة الاحتياطية';};
+$('impb').onclick=()=>$('imp').click();
+$('imp').onchange=e=>{const file=e.target.files[0];if(!file)return;const rd=new FileReader();
+  rd.onload=()=>{try{const o=JSON.parse(rd.result);if(!o||!Array.isArray(o.rooms)||!o.rooms.length)throw 0;
+    S=o;S.cur=Math.min(S.cur||0,S.rooms.length-1);save();tabs();toForm();update();$('msg').textContent='استُعيدت البيانات';}
+    catch(err){$('msg').textContent='الملف غير صالح';}e.target.value='';};rd.readAsText(file);};
+function iso(r,c,cc,cw){
+  const L=r.L,W=r.W,H=r.H,C=Math.cos(Math.PI/6),S=0.5;
+  const raw=(x,y,z)=>[(x-y)*C,(x+y)*S-z];
+  const pts=[[0,0,0],[L,0,0],[L,W,0],[0,W,0],[0,0,H],[L,0,H],[L,W,H],[0,W,H]].map(p=>raw(...p));
+  const xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]),x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
+  const VW=420,VH=300,m=46,k=Math.min((VW-2*m)/(x1-x0),(VH-2*m)/(y1-y0)),ox=(VW-(x1-x0)*k)/2,oy=(VH-(y1-y0)*k)/2;
+  const P=(x,y,z)=>{const q=raw(x,y,z);return [(ox+(q[0]-x0)*k).toFixed(1),(oy+(q[1]-y0)*k).toFixed(1)];};
+  const poly=(a,st)=>'<polygon points="'+a.map(p=>P(...p).join(',')).join(' ')+'" '+st+'/>';
+  const txt=(p,t,dx,dy)=>{const q=P(...p);return '<text x="'+(+q[0]+dx)+'" y="'+(+q[1]+dy)+'" text-anchor="middle" font-size="12" fill="#16242b" direction="ltr">'+t+'</text>';};
+  const line='stroke="#16242b" stroke-width="1.2" stroke-linejoin="round"';
+  let s='<svg viewBox="0 0 '+VW+' '+VH+'" width="100%" style="max-width:420px" role="img" aria-label="شكل ثلاثي الأبعاد مبسط للفراغ">';
+  s+=poly([[0,0,0],[L,0,0],[L,W,0],[0,W,0]],'fill="#e9edee" '+line);
+  s+=poly([[0,0,0],[L,0,0],[L,0,H],[0,0,H]],'fill="#f7f9f9" '+line);
+  s+=poly([[0,0,0],[0,W,0],[0,W,H],[0,0,H]],'fill="#fbfcfc" '+line);
+  const fw=c.Sw>0?Math.min(1,cw/c.Sw):0;
+  if(fw>0.001){const z=H*(1-fw);
+    s+=poly([[0,0,z],[L,0,z],[L,0,H],[0,0,H]],'fill="#c9862b" fill-opacity="0.55" stroke="#c9862b"');
+    s+=poly([[0,0,z],[0,W,z],[0,W,H],[0,0,H]],'fill="#c9862b" fill-opacity="0.55" stroke="#c9862b"');}
+  const fc=c.Sf>0?Math.min(1,cc/c.Sf):0;
+  if(fc>0.001){const q=Math.sqrt(fc),a=L*(1-q)/2,b=W*(1-q)/2;
+    s+=poly([[a,b,H],[L-a,b,H],[L-a,W-b,H],[a,W-b,H]],'fill="#0b6e8a" fill-opacity="0.45" stroke="#0b6e8a"');}
+  s+=poly([[0,0,H],[L,0,H],[L,W,H],[0,W,H]],'fill="none" stroke="#16242b" stroke-width="1" stroke-dasharray="5 4"');
+  s+='<line x1="'+P(L,W,0)[0]+'" y1="'+P(L,W,0)[1]+'" x2="'+P(L,W,H)[0]+'" y2="'+P(L,W,H)[1]+'" stroke="#16242b" stroke-width="1" stroke-dasharray="5 4"/>';
+  s+='<line x1="'+P(L,0,0)[0]+'" y1="'+P(L,0,0)[1]+'" x2="'+P(L,0,H)[0]+'" y2="'+P(L,0,H)[1]+'" '+line+'/>';
+  s+='<line x1="'+P(0,W,0)[0]+'" y1="'+P(0,W,0)[1]+'" x2="'+P(0,W,H)[0]+'" y2="'+P(0,W,H)[1]+'" '+line+'/>';
+  s+=txt([L/2,W,0],f1(L)+' m',-22,16)+txt([L,W/2,0],f1(W)+' m',24,16)+txt([L,0,H/2],f1(H)+' m',26,4);
+  return s+'</svg>';
+}
+function report(){
+  const esc=t=>String(t).replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+  const n=(v,d)=>'<td class="n">'+(d===2?f2(v):f1(v))+'</td>',pc=(a,b)=>b>0?Math.round(100*a/b)+'%':'—';
+  const LOC={ceil:'السقف',wall:'الجدران',both:'السقف والجدران'};
+  let out='';
+  S.rooms.forEach(r=>{const c=calc(r);
+    const cc=r.ploc==='ceil'?c.cover:r.ploc==='wall'?0:c.cover*c.Sf/(c.Sf+c.Sw),cw=c.cover-cc;
+    const glass=2*(r.L+r.W)*r.H-c.Sw,cp=r.carpet?Math.min(100,Math.max(0,r.carpetPct)):0;
+    out+='<section><h2>'+esc(r.name)+'</h2><p class="sub">'+(r.type==='custom'?'هدف مخصص':TYPES[r.type].n)+' · '+'<span dir="ltr">'+f1(r.L)+' × '+f1(r.W)+' × '+f2(r.H)+' m</span> · المساحة '+f1(c.Sf)+' م² · الحجم '+f1(c.V)+' م³</p>';
+    out+='<div class="two"><div>'+iso(r,c,cc,cw)+'<p class="leg"><i style="background:#0b6e8a"></i>معالجة السقف <i style="background:#c9862b"></i>معالجة الجدران (موضع توضيحي)</p></div><div>';
+    out+='<table><thead><tr><th>السطح</th><th>التشطيب</th><th>المساحة م²</th><th>معامل الامتصاص</th><th>المعالَج م²</th><th>نسبة التغطية</th></tr></thead><tbody>';
+    out+='<tr><td>السقف</td><td>'+CEIL[r.ceil][0]+'</td>'+n(c.Sf)+n(CEIL[r.ceil][1],2)+n(cc)+'<td class="n">'+pc(cc,c.Sf)+'</td></tr>';
+    out+='<tr><td>الجدران (صافي)</td><td>'+WALL[r.wall][0]+'</td>'+n(c.Sw)+n(WALL[r.wall][1],2)+n(cw)+'<td class="n">'+pc(cw,c.Sw)+'</td></tr>';
+    out+='<tr><td>الزجاج</td><td>زجاج</td>'+n(glass)+n(0.05,2)+'<td class="n">—</td><td class="n">—</td></tr>';
+    out+='<tr><td>الأرضية</td><td>'+FLOOR[r.floor][0]+(cp?' + '+CARPET[r.carpetType][0]+' '+cp+'% (NRC '+f2(r.carpetN)+')':'')+'</td>'+n(c.Sf)+n(FLOOR[r.floor][1],2)+'<td class="n">—</td><td class="n">—</td></tr>';
+    out+='</tbody></table>';
+    out+='<table class="kv"><tbody><tr><td>المنتج</td><td>'+esc(r.pname)+' · NRC '+f2(r.pnrc)+' · '+LOC[r.ploc]+'</td></tr>';
+    out+='<tr><td>المساحة المعالَجة</td><td>'+f1(c.cover)+' م² · '+c.panels+' لوح مع هالك '+r.waste+'%</td></tr>';
+    out+='<tr><td>زمن الارتداد</td><td>قبل '+f2(c.T0)+' ث · الهدف '+f2(c.tt)+' ث · بعد '+f2(c.T1)+' ث</td></tr>';
+    if(r.seats>0)out+='<tr><td>المقاعد</td><td>'+r.seats+' · '+SEAT[r.seatType][0]+'</td></tr>';
+    if(r.other&&r.others.length)out+='<tr><td>مواد ماصة أخرى</td><td>'+r.others.map(o=>esc(o.name||'مادة')+' '+f1(+o.area||0)+' م² (NRC '+f2(+o.nrc||0)+')').join('، ')+'</td></tr>';
+    if(!c.enough)out+='<tr><td>تنبيه</td><td>المنتج في هذا المكان لا يكفي وحده لبلوغ الهدف</td></tr>';
+    out+='</tbody></table></div></div></section>';});
+  return '<div class="rtools"><button type="button" id="rprint">طباعة / حفظ PDF</button><button type="button" id="rclose">رجوع للحاسبة</button><span id="rmsg"></span></div><div class="rfoot">قسم الدعم الفني · المنصورة لحلول البناء</div><table class="rwrap"><thead><tr><td class="rsp"></td></tr></thead><tfoot><tr><td class="rsp"></td></tr></tfoot><tbody><tr><td><h1>تقرير المعالجة الصوتية للفراغات</h1><p class="sub">'+new Date().toLocaleDateString('ar')+' · حساب تقديري بمعادلة سابين</p>'+out+'<section><h2>ملخص الفراغات</h2>'+$('sum').outerHTML+'</section></td></tr></tbody></table>';
+}
+(function(){
+  const st=document.createElement('style');
+  st.textContent='#rep{position:fixed;inset:0;z-index:999;overflow:auto;-webkit-overflow-scrolling:touch;background:#fff;color:#16242b;padding:18px;font-family:"Geeza Pro","Segoe UI",Tahoma,sans-serif;font-size:13px;line-height:1.5;box-sizing:border-box}#rep *{color:inherit}#rep h1{font-size:20px;margin:0}#rep h2{font-size:16px;margin:0}#rep .sub{margin:2px 0 8px;color:#5b6b73}#rep section{border-top:2px solid #0b6e8a;padding-top:10px;margin-top:18px;break-inside:avoid}#rep .two{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,9fr);gap:14px;align-items:start}#rep table{width:100%;border-collapse:collapse;margin-bottom:8px;background:#fff}#rep td,#rep th{border:1px solid #c9d1d4;padding:4px 5px;text-align:start;background:#fff;white-space:normal;font-size:12px;overflow-wrap:anywhere}#rep th{background:#eef1f2}#rep .n{direction:ltr;text-align:end;font-variant-numeric:tabular-nums}#rep .kv td:first-child{width:28%;background:#f6f8f8}#rep .leg{font-size:11.5px;color:#5b6b73;margin:2px 0}#rep .leg i{display:inline-block;width:11px;height:11px;margin:0 4px 0 8px;vertical-align:-1px}#rep .rtools{position:sticky;top:0;display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:#fff;padding:6px 0 10px;margin-bottom:8px;border-bottom:1px solid #c9d1d4}#rep .rtools button{font:inherit;padding:9px 14px;border-radius:8px;border:1px solid #0b6e8a;background:#fff;color:#0b6e8a;cursor:pointer}#rep #rprint{background:#0b6e8a;color:#fff}#rep #rmsg{color:#5b6b73}@media (max-width:640px){#rep .two{grid-template-columns:1fr}}#rep .rwrap{margin:0;background:none}#rep .rwrap>*>tr>td{border:0;padding:0;background:none;font-size:13px}#rep .rfoot{display:none}@media print{html,body{background:#fff!important}body.printing{margin:0!important}body.printing>*:not(#rep){display:none!important}#rep{position:static;overflow:visible;padding:0 12mm}#rep .rtools{display:none}#rep .rwrap>*>tr>td.rsp{height:14mm}#rep .rfoot{display:block;position:fixed;bottom:5mm;left:0;right:0;text-align:center;font-size:11px;color:#5b6b73}@page{margin:0}}';
+  document.head.appendChild(st);
+})();
+function closeRep(){const d=$('rep');if(d)d.remove();document.body.classList.remove('printing');}
+$('prt').onclick=()=>{
+  closeRep();const d=document.createElement('div');d.id='rep';d.dir='rtl';d.innerHTML=report();document.body.appendChild(d);document.body.classList.add('printing');
+  const hint='إن لم تظهر نافذة الطباعة: استخدم زر المشاركة أو قائمة المتصفح ثم «طباعة»';
+  const go=()=>{const t0=document.title;document.title='قسم الدعم الفني - المنصورة لحلول البناء';setTimeout(()=>{document.title=t0;},1500);try{if(typeof window.print!=='function')throw 0;window.print();$('rmsg').textContent=hint;}catch(e){$('rmsg').textContent=hint;}};
+  $('rprint').onclick=go;$('rclose').onclick=closeRep;
+  setTimeout(go,350);
+};
+if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{});});}
+})();
+</script>
+</body>
+</html>
